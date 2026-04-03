@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>White Bear Clicker</title>
+
+<script src="https://yandex.ru/games/sdk/v2"></script>
+
+<style>
+body{
+ margin:0;
+ font-family:sans-serif;
+ background:linear-gradient(#0b1d2a,#123b52);
+ color:white;
+ text-align:center;
+}
+
+.top{
+ position:fixed;
+ top:0;
+ width:100%;
+ background:#0e2a3a;
+ padding:10px;
+ z-index:10;
+}
+
+.screen{display:none; padding-top:80px;}
+.active{display:block;}
+
+.bear{
+ font-size:90px;
+ animation:idle 2s infinite;
+ cursor:pointer;
+}
+
+@keyframes idle{
+ 0%{transform:scale(1)}
+ 50%{transform:scale(1.1)}
+ 100%{transform:scale(1)}
+}
+
+button{
+ padding:10px;
+ margin:5px;
+ border:none;
+ border-radius:10px;
+ background:#1f4f6b;
+ color:white;
+}
+
+.card{
+ background:#123b52;
+ margin:10px;
+ padding:10px;
+ border-radius:10px;
+}
+
+.bottom{
+ position:fixed;
+ bottom:0;
+ width:100%;
+ background:#0e2a3a;
+ padding:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="top">🐟 <span id="fish">0</span></div>
+
+<!-- ИГРА -->
+<div id="game" class="screen active">
+ <div class="bear" onclick="clickBear()">🐻‍❄️</div>
+ <button onclick="rewardAd()">📺 x2 буст</button>
+</div>
+
+<!-- МАГАЗИН -->
+<div id="shop" class="screen"></div>
+
+<!-- ДОСТИЖЕНИЯ -->
+<div id="ach" class="screen"></div>
+
+<!-- НИЖНЕЕ МЕНЮ -->
+<div class="bottom">
+ <button onclick="show('game')">🎮</button>
+ <button onclick="show('shop')">🛒</button>
+ <button onclick="show('ach')">🏆</button>
+</div>
+
+<script>
+let fish=0;
+let income=0;
+let boost=false;
+let adsWatched=0;
+
+let upgrades=[
+{name:"Лунка",cost:10,inc:1},
+{name:"Удочка",cost:50,inc:5},
+{name:"Завод",cost:1000,inc:50},
+{name:"Дрон",cost:5000,inc:200}
+];
+
+let achievements=[
+{txt:"100 рыбы",goal:100,done:false},
+{txt:"1000 рыбы",goal:1000,done:false},
+{txt:"Посмотри рекламу",goal:1,done:false,ads:true}
+];
+
+function show(id){
+ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+}
+
+function clickBear(){
+ fish+=boost?2:1;
+ update();
+}
+
+function update(){
+ document.getElementById("fish").innerText=fish;
+ renderShop();
+ renderAch();
+}
+
+function renderShop(){
+ let el=document.getElementById("shop");
+ el.innerHTML="<h2>Магазин</h2>";
+ upgrades.forEach(u=>{
+  let div=document.createElement("div");
+  div.className="card";
+  div.innerHTML=u.name+" ("+u.cost+")";
+  div.onclick=()=>{
+    if(fish>=u.cost){
+      fish-=u.cost;
+      income+=u.inc;
+      update();
+    }
+  };
+  el.appendChild(div);
+ });
+}
+
+function renderAch(){
+ let el=document.getElementById("ach");
+ el.innerHTML="<h2>Достижения</h2>";
+ achievements.forEach(a=>{
+  let div=document.createElement("div");
+  div.className="card";
+  div.innerHTML=(a.done?"✅ ":"❌ ")+a.txt;
+  el.appendChild(div);
+ });
+}
+
+function checkAch(){
+ achievements.forEach(a=>{
+  if(!a.done){
+    if(a.ads && adsWatched>=1){a.done=true; fish+=200;}
+    if(!a.ads && fish>=a.goal){a.done=true; fish+=100;}
+  }
+ });
+}
+
+function rewardAd(){
+ adsWatched++;
+ boost=true;
+ setTimeout(()=>boost=false,180000);
+ checkAch();
+}
+
+setInterval(()=>{
+ fish+=income;
+ checkAch();
+ update();
+},1000);
+
+/* Яндекс SDK */
+let ysdk;
+YaGames.init().then(sdk=>{
+ ysdk=sdk;
+});
+
+/* сохранение */
+setInterval(()=>{
+ localStorage.setItem("save",JSON.stringify({fish,income,adsWatched}));
+},5000);
+
+function load(){
+ let s=localStorage.getItem("save");
+ if(s){
+  let d=JSON.parse(s);
+  fish=d.fish;
+  income=d.income;
+  adsWatched=d.adsWatched||0;
+ }
+}
+
+load();
+update();
+</script>
+
+</body>
+</html>
