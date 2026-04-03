@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>White Bear Clicker</title>
+
+<script src="https://yandex.ru/games/sdk/v2"></script>
+
+<style>
+body {
+  margin:0;
+  font-family:sans-serif;
+  color:white;
+  text-align:center;
+  background:#0b1d2a;
+  transition:0.3s;
+}
+
+.topbar {
+  position:fixed;
+  top:0;
+  width:100%;
+  background:#102a3a;
+  padding:10px;
+}
+
+.container {
+  margin-top:80px;
+}
+
+/* Медведь */
+.bear {
+  font-size:100px;
+  cursor:pointer;
+  margin:20px;
+}
+
+/* Панели */
+.panel {
+  background:#102a3a;
+  margin:10px;
+  padding:10px;
+  border-radius:10px;
+}
+
+/* Магазин */
+.shop button {
+  display:block;
+  width:100%;
+  margin:5px 0;
+}
+
+/* Кнопки */
+button {
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  margin:5px;
+}
+
+/* Нижняя панель */
+.bottom {
+  position:fixed;
+  bottom:0;
+  width:100%;
+  background:#102a3a;
+  padding:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  🐟 <span id="fish">0</span>
+</div>
+
+<div class="container">
+
+<div class="bear" onclick="clickBear()">🐻‍❄️</div>
+
+<button id="startBtn" onclick="startBonus()">🎁 Стартовый бонус</button>
+
+<div class="panel shop">
+  <h3>🛒 Магазин</h3>
+  <div id="shop"></div>
+</div>
+
+<div class="panel">
+  <h3>🏆 Достижения</h3>
+  <div id="achievements"></div>
+</div>
+
+<div class="panel">
+  <h3>🎨 Фоны</h3>
+  <button onclick="buyBg('#0b1d2a',0)">Стандарт</button>
+  <button onclick="buyBg('#1e3d59',500)">Лёд (500)</button>
+  <button onclick="buyBg('#3a1e3d',2000)">Ночь (2K)</button>
+</div>
+
+</div>
+
+<div class="bottom">
+  <button onclick="rewardBoost()">📺 x2</button>
+  <button onclick="toggleSound()">🔊</button>
+  <button onclick="toggleVibration()">📳</button>
+</div>
+
+<script>
+let fish=0;
+let income=0;
+let sound=true;
+let vibration=true;
+let boost=false;
+
+let upgrades=[
+{name:"Лунка",cost:10,income:1},
+{name:"Удочка",cost:50,income:5},
+{name:"Лагерь",cost:200,income:10},
+{name:"Завод",cost:1000,income:50},
+{name:"Дрон",cost:5000,income:200},
+{name:"Экспедиция",cost:20000,income:500},
+{name:"Спутник",cost:250000,income:2000},
+{name:"Океан ферма",cost:500000,income:5000}
+];
+
+let achievements=[
+{goal:100,done:false},
+{goal:1000,done:false},
+{goal:10000,done:false},
+{goal:100000,done:false}
+];
+
+function format(n){
+ if(n>=1000000)return (n/1000000).toFixed(1)+"M";
+ if(n>=1000)return (n/1000).toFixed(1)+"K";
+ return n;
+}
+
+function update(){
+ document.getElementById("fish").innerText=format(fish);
+ renderShop();
+ renderAchievements();
+}
+
+function clickBear(){
+ fish+=boost?2:1;
+ if(vibration)navigator.vibrate?.(10);
+ if(sound)new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg").play();
+ checkAchievements();
+ update();
+}
+
+function renderShop(){
+ let el=document.getElementById("shop");
+ el.innerHTML="";
+ upgrades.sort((a,b)=>a.cost-b.cost);
+ upgrades.forEach(u=>{
+  let b=document.createElement("button");
+  b.innerText=u.name+" ("+format(u.cost)+")";
+  b.onclick=()=>{
+    if(fish>=u.cost){
+      fish-=u.cost;
+      income+=u.income;
+      update();
+    }
+  };
+  el.appendChild(b);
+ });
+}
+
+function renderAchievements(){
+ let el=document.getElementById("achievements");
+ el.innerHTML="";
+ achievements.forEach(a=>{
+  let div=document.createElement("div");
+  div.innerText=(a.done?"✅ ":"❌ ")+a.goal;
+  el.appendChild(div);
+ });
+}
+
+function checkAchievements(){
+ achievements.forEach(a=>{
+  if(!a.done && fish>=a.goal){
+    a.done=true;
+    fish+=100;
+  }
+ });
+}
+
+function startBonus(){
+ document.getElementById("startBtn").style.display="none";
+ fish+=300;
+ update();
+}
+
+function rewardBoost(){
+ boost=true;
+ setTimeout(()=>boost=false,180000);
+}
+
+function toggleSound(){
+ sound=!sound;
+}
+
+function toggleVibration(){
+ vibration=!vibration;
+}
+
+function buyBg(color,cost){
+ if(fish>=cost){
+   fish-=cost;
+   document.body.style.background=color;
+   update();
+ }
+}
+
+setInterval(()=>{
+ fish+=income;
+ update();
+},1000);
+
+/* SDK */
+let ysdk;
+YaGames.init().then(sdk=>{
+ ysdk=sdk;
+ ysdk.features.LoadingAPI.ready();
+ ysdk.features.GameplayAPI.start();
+});
+
+/* старт */
+update();
+</script>
+
+</body>
+</html>
